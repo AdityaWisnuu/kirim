@@ -38,6 +38,7 @@ fast") is Stellar's, not theirs. KIRIM's value is in the mechanism:
 | Production deployment | Netlify, with SPA routing, API redirects, security headers and immutable asset caching |
 | Contract on testnet | [`CBMSCY57EJZHLSGVEGLVKBP75KACEJCJPO7TFEQZOO6T6DYVJDZP3SMX`](https://stellar.expert/explorer/testnet/contract/CBMSCY57EJZHLSGVEGLVKBP75KACEJCJPO7TFEQZOO6T6DYVJDZP3SMX) |
 | Tests & CI | **35 tests** — 15 contract (`cargo test`) + 20 frontend (`vitest`) — run on every push by GitHub Actions |
+| Performance optimization | [`docs/load-test.md`](docs/load-test.md) — 35 Playwright journey checks, plus a concurrency test that found simultaneous requests failing 8/10 and drove the fix to 10/10 |
 | Documentation | This README, inline module docs, and runnable scripts in `scripts/` |
 
 ## Proof on-chain
