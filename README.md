@@ -34,6 +34,7 @@ fast") is Stellar's, not theirs. KIRIM's value is in the mechanism:
 | Loading states & error handling | Skeletons on every async surface, five named transaction stages, and 13 contract errors translated into sentences a person can act on |
 | Monitoring & analytics | Self-hosted telemetry over Netlify Functions + Blobs — no cookies, no third party — surfaced at [`/monitor`](https://kirim-app.netlify.app/monitor) alongside on-chain metrics and captured client errors |
 | User feedback collection | In-app feedback sheet (asked once, after a first successful transfer); the summary is public on `/monitor` |
+| Real-user onboarding | Self-serve at [`/join`](https://kirim-app.netlify.app/join): connect a wallet, tap once, claim. Brand-new wallets are created on the ledger automatically, so a first-time user never hits "Account not found". A [two-minute guide](https://kirim-app.netlify.app/try) covers people who have never held a wallet. |
 | Production deployment | Netlify, with SPA routing, API redirects, security headers and immutable asset caching |
 | Contract on testnet | [`CBMSCY57EJZHLSGVEGLVKBP75KACEJCJPO7TFEQZOO6T6DYVJDZP3SMX`](https://stellar.expert/explorer/testnet/contract/CBMSCY57EJZHLSGVEGLVKBP75KACEJCJPO7TFEQZOO6T6DYVJDZP3SMX) |
 | Tests & CI | **35 tests** — 15 contract (`cargo test`) + 20 frontend (`vitest`) — run on every push by GitHub Actions |
@@ -71,6 +72,7 @@ and covered by tests.
 | Mobile — send | ![Mobile send](docs/screenshots/mobile-send.png) |
 | Mobile — claim | ![Mobile claim](docs/screenshots/mobile-claim.png) |
 | Monitoring & analytics | ![Monitoring](docs/screenshots/monitoring.png) |
+| Self-serve onboarding | ![Join](docs/screenshots/self-serve-join.png) |
 | CI pipeline | ![CI](docs/screenshots/ci-pipeline.png) |
 | 35 tests passing | ![Tests](docs/screenshots/tests-passing.png) |
 
@@ -103,7 +105,7 @@ contracts/kirim/src/lib.rs   escrow: send · claim · refund, multi-token, cappe
 web/src/lib/                 chain (Soroban RPC) · wallet · format · secret · analytics
 web/src/views/               send · claim · activity · monitor
 web/src/components/          toast · feedback sheet
-web/netlify/functions/       track · metrics · feedback  (telemetry over Netlify Blobs)
+web/netlify/functions/       track · metrics · feedback · invite  (Netlify Blobs)
 scripts/                     deploy.sh · smoke.sh
 ```
 
