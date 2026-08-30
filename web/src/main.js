@@ -16,6 +16,7 @@ import { renderSend } from "./views/send.js";
 import { renderClaim } from "./views/claim.js";
 import { renderActivity } from "./views/activity.js";
 import { renderMonitor } from "./views/monitor.js";
+import { renderTry } from "./views/try.js";
 
 const NAV = [
   { path: "/", label: "Send", icon: "🧧" },
@@ -102,6 +103,7 @@ function render(path, params) {
   if (path === "/claim") return renderClaim(context);
   if (path === "/activity") return renderActivity(context);
   if (path === "/monitor") return renderMonitor(context);
+  if (path === "/try") return renderTry(context);
   return renderSend(context);
 }
 
@@ -109,6 +111,7 @@ route("/", ({ params }) => render("/", params));
 route("/claim", ({ params }) => render("/claim", params));
 route("/activity", ({ params }) => render("/activity", params));
 route("/monitor", ({ params }) => render("/monitor", params));
+route("/try", ({ params }) => render("/try", params));
 route("*", () => {
   view.innerHTML = `
     <div class="enter">

@@ -129,7 +129,9 @@ function paint({ mount, transfer, ledger, secret, requireWallet, id }) {
     panel.innerHTML = `
       <button class="block" id="claim-button">Claim ${formatAmount(transfer.amount, decimals)} ${code}</button>
       <p class="muted small" style="margin:10px 0 0">
-        ${wallet ? "Goes straight to your connected wallet." : "You'll connect a wallet in the next step — it takes about a minute."}
+        ${wallet
+          ? "Goes straight to your connected wallet."
+          : `No wallet yet? <a href="/try" data-link>Two-minute setup guide →</a>`}
       </p>
       <p class="status" id="claim-status" role="status"></p>`;
     panel.querySelector("#claim-button").addEventListener("click", () =>
