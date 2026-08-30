@@ -1,0 +1,8 @@
+target
+.soroban
+.stellar
+node_modules
+dist
+.DS_Store
+.env
+.netlify
