@@ -94,7 +94,8 @@ export function renderJoin({ mount, requireWallet }) {
         ? "You already have one waiting — opening it…"
         : "Ready! Opening your claim page…";
       toast("A transfer is waiting for you 🧧", "ok");
-      setTimeout(() => navigate(`/claim?id=${data.id}`), 1_200);
+      const target = data.secret ? `/claim?id=${data.id}#s=${data.secret}` : `/claim?id=${data.id}`;
+      setTimeout(() => navigate(target), 1_200);
     } catch (error) {
       status.className = "status error";
       status.textContent = friendlyError(error);

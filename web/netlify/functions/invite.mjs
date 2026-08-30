@@ -1,25 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import {
-  rpc,
-  Contract,
-  TransactionBuilder,
-  Networks,
-  Keypair,
-  nativeToScVal,
-  scValToNative,
-  xdr,
-  BASE_FEE,
-} from "@stellar/stellar-sdk";
-
-const CONTRACT_ID = "CBMSCY57EJZHLSGVEGLVKBP75KACEJCJPO7TFEQZOO6T6DYVJDZP3SMX";
-const XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-const RPC_URL = "https://soroban-testnet.stellar.org";
-
-/// 2 XLM testnet per pencoba, jendela klaim 7 hari.
-const AMOUNT_STROOPS = 20_000_000n;
-const TTL_LEDGERS = 120_960;
-/// Batas kasar supaya faucet tidak dikuras satu orang atau bot.
-const MAX_INVITES = 200;
+import { createHash } from "node:crypto";
 
 const HORIZON_URL = "https://horizon-testnet.stellar.org";
 
@@ -38,16 +18,34 @@ async function ensureAccountExists(address) {
   return "created";
 }
 
-/// Kirim satu transfer percobaan ke alamat yang meminta, lalu kembalikan id-nya
-/// supaya pemohon tinggal membuka halaman klaim dan menandatangani sendiri.
+/// Slot ditentukan dari alamatnya sendiri, bukan dari antrean bersama: permintaan
+/// yang datang bersamaan tidak saling berebut, dan permintaan ulang dari alamat
+/// yang sama selalu mendapat tautan yang sama.
+function slotFor(address, size) {
+  const digest = createHash("sha256").update(address).digest();
+  return digest.readUInt32BE(0) % size;
+}
+
 export default async (request) => {
-  if (request.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+  const store = getStore("kirim-invites");
+
+  // Pengisian kolam oleh penyelenggara — pekerjaan rantai dilakukan di muka.
+  if (request.method === "PUT") {
+    const expected = process.env.POOL_TOKEN;
+    if (!expected || request.headers.get("x-pool-token") !== expected) {
+      return new Response("Forbidden", { status: 403 });
+    }
+    const { pool } = await request.json();
+    if (!Array.isArray(pool) || pool.length === 0) {
+      return new Response("Bad request", { status: 400 });
+    }
+    const existing = (await store.get("pool", { type: "json" })) ?? [];
+    await store.setJSON("pool", [...existing, ...pool]);
+    return Response.json({ ok: true, size: existing.length + pool.length });
   }
 
-  const secret = process.env.ONBOARDER_SECRET;
-  if (!secret) {
-    return Response.json({ error: "Onboarding is not configured." }, { status: 503 });
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
   }
 
   let body;
@@ -62,25 +60,33 @@ export default async (request) => {
     return Response.json({ error: "That doesn't look like a Stellar address." }, { status: 400 });
   }
 
-  const store = getStore("kirim-invites");
-  const ledger = (await store.get("issued", { type: "json" })) ?? { total: 0, byAddress: {} };
-
-  // Satu undangan per dompet — pengulangan dikembalikan ke transfer yang sama.
-  if (ledger.byAddress[address] != null) {
-    return Response.json({ id: ledger.byAddress[address], repeat: true });
-  }
-  if (ledger.total >= MAX_INVITES) {
+  const pool = (await store.get("pool", { type: "json" })) ?? [];
+  if (pool.length === 0) {
     return Response.json(
-      { error: "The test faucet is empty for now — ping the author." },
-      { status: 429 }
+      { error: "The test pool is empty right now — ping the author." },
+      { status: 503 }
     );
   }
 
-  const keypair = Keypair.fromSecret(secret);
-  if (keypair.publicKey() === address) {
-    return Response.json({ error: "That's the faucet's own address." }, { status: 400 });
+  const claims = (await store.get("claims", { type: "json" })) ?? {};
+  let index = claims[address];
+
+  if (index == null) {
+    // Ambil slot milik alamat ini; kalau sudah dipakai orang lain, geser maju.
+    index = slotFor(address, pool.length);
+    const taken = new Set(Object.values(claims));
+    for (let step = 0; step < pool.length && taken.has(index); step++) {
+      index = (index + 1) % pool.length;
+    }
+    if (taken.has(index)) {
+      return Response.json({ error: "Every test transfer is taken." }, { status: 503 });
+    }
+    claims[address] = index;
+    await store.setJSON("claims", claims);
   }
 
+  // Pendanaan akun tetap dilakukan per permintaan, tapi ini cepat dan aman
+  // dijalankan berbarengan — tidak ada state kontrak yang diperebutkan.
   let accountState;
   try {
     accountState = await ensureAccountExists(address);
@@ -91,57 +97,8 @@ export default async (request) => {
     );
   }
 
-  const server = new rpc.Server(RPC_URL);
-  const contract = new Contract(CONTRACT_ID);
-  const account = await server.getAccount(keypair.publicKey());
-
-  const operation = contract.call(
-    "send",
-    nativeToScVal(keypair.publicKey(), { type: "address" }),
-    nativeToScVal(address, { type: "address" }), // Option::Some = nilainya langsung
-    nativeToScVal(XLM_SAC, { type: "address" }),
-    nativeToScVal(AMOUNT_STROOPS, { type: "i128" }),
-    nativeToScVal("welcome to KIRIM 🧧", { type: "string" }),
-    nativeToScVal(TTL_LEDGERS, { type: "u32" }),
-    xdr.ScVal.scvVoid() // Option::None — mode direct, bukan tautan rahasia
-  );
-
-  const tx = new TransactionBuilder(account, {
-    fee: BASE_FEE,
-    networkPassphrase: Networks.TESTNET,
-  })
-    .addOperation(operation)
-    .setTimeout(120)
-    .build();
-
-  let prepared;
-  try {
-    prepared = await server.prepareTransaction(tx);
-  } catch (error) {
-    return Response.json({ error: `Simulation failed: ${error.message}` }, { status: 502 });
-  }
-
-  prepared.sign(keypair);
-  const sent = await server.sendTransaction(prepared);
-  if (sent.status === "ERROR") {
-    return Response.json({ error: "The network rejected the transfer." }, { status: 502 });
-  }
-
-  let result = await server.getTransaction(sent.hash);
-  for (let i = 0; i < 30 && result.status === "NOT_FOUND"; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
-    result = await server.getTransaction(sent.hash);
-  }
-  if (result.status !== "SUCCESS") {
-    return Response.json({ error: `Transfer ${result.status}.` }, { status: 502 });
-  }
-
-  const id = Number(scValToNative(result.returnValue));
-  ledger.byAddress[address] = id;
-  ledger.total += 1;
-  await store.setJSON("issued", ledger);
-
-  return Response.json({ id, hash: sent.hash, account: accountState });
+  const entry = pool[index];
+  return Response.json({ id: entry.id, secret: entry.secret, account: accountState });
 };
 
 export const config = { path: "/api/invite" };
