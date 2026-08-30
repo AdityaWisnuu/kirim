@@ -38,7 +38,16 @@ fn ctx_with_fee(fee_bps: u32) -> Ctx<'static> {
     let contract_id = env.register(Kirim, (&admin, &treasury, fee_bps));
     let kirim = KirimClient::new(&env, &contract_id);
 
-    Ctx { env, kirim, token, token_id, sender, recipient, treasury, admin }
+    Ctx {
+        env,
+        kirim,
+        token,
+        token_id,
+        sender,
+        recipient,
+        treasury,
+        admin,
+    }
 }
 
 fn ctx() -> Ctx<'static> {
@@ -257,11 +266,13 @@ fn invalid_inputs_are_rejected() {
     let to = Some(c.recipient.clone());
 
     assert_eq!(
-        c.kirim.try_send(&c.sender, &to, &c.token_id, &0, &memo(&c.env), &100, &None),
+        c.kirim
+            .try_send(&c.sender, &to, &c.token_id, &0, &memo(&c.env), &100, &None),
         Err(Ok(Error::InvalidAmount))
     );
     assert_eq!(
-        c.kirim.try_send(&c.sender, &to, &c.token_id, &XLM, &memo(&c.env), &1, &None),
+        c.kirim
+            .try_send(&c.sender, &to, &c.token_id, &XLM, &memo(&c.env), &1, &None),
         Err(Ok(Error::InvalidTtl))
     );
     assert_eq!(
@@ -323,7 +334,9 @@ fn transfers_carry_their_own_token_so_several_assets_coexist() {
     let c = ctx();
 
     // Aset kedua, terpisah dari aset default milik ctx.
-    let other = c.env.register_stellar_asset_contract_v2(Address::generate(&c.env));
+    let other = c
+        .env
+        .register_stellar_asset_contract_v2(Address::generate(&c.env));
     let other_id = other.address();
     StellarAssetClient::new(&c.env, &other_id).mint(&c.sender, &(500 * XLM));
     let other_token = TokenClient::new(&c.env, &other_id);

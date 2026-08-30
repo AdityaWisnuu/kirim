@@ -22,7 +22,7 @@ export function renderSend({ mount, requireWallet }) {
   mount.innerHTML = `
     <div class="enter">
       <div>
-        <h1>Send money that can<br />come back to you.</h1>
+        <h1>Send money that can come back to you.</h1>
         <p class="lede">
           Funds wait in an escrow on Stellar. Your recipient claims them with a link —
           no wallet needed up front — and if nobody claims, the money returns to you.

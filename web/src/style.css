@@ -189,6 +189,7 @@ main {
   margin: 0 auto;
   padding: 22px 18px 40px;
 }
+@media (max-width: 719px) { main { padding-bottom: 76px; } }
 
 /* ------------------------------------------------------------ typography */
 
@@ -296,7 +297,13 @@ input::placeholder, textarea::placeholder { color: #5b6173; }
   color: var(--ink);
   font-weight: 600;
 }
-.segmented button small { display: block; font-size: 0.68rem; opacity: 0.75; }
+.segmented button {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  line-height: 1.25;
+}
+.segmented button small { font-size: 0.66rem; opacity: 0.72; }
 
 /* -------------------------------------------------------------- buttons */
 
@@ -331,7 +338,7 @@ button.ghost, .button.ghost {
 }
 button.ghost:hover:not(:disabled) { color: var(--paper); border-color: var(--paper); filter: none; }
 
-button.block { width: 100%; }
+.block { width: 100%; }
 
 /* Riak halus saat tombol utama ditekan. */
 button.pulse::after {
@@ -599,16 +606,29 @@ a.row:hover { border-color: var(--line-strong); transform: translateX(2px); }
 
 .fab {
   position: fixed;
-  right: 16px;
-  bottom: 96px;
+  right: 14px;
+  bottom: 92px;
   z-index: 40;
-  width: auto;
-  padding: 11px 15px;
+  width: 46px;
+  height: 46px;
+  padding: 0;
   border-radius: 999px;
-  font-size: 0.74rem;
+  font-size: 1.05rem;
+  background: var(--surface-2);
   box-shadow: var(--shadow);
 }
-@media (min-width: 720px) { .fab { bottom: 24px; } }
+/* Teksnya hanya muat begitu ada ruang; di ponsel ikonnya sudah cukup. */
+.fab .fab-label { display: none; }
+@media (min-width: 720px) {
+  .fab {
+    bottom: 24px;
+    width: auto;
+    height: auto;
+    padding: 11px 16px;
+    font-size: 0.74rem;
+  }
+  .fab .fab-label { display: inline; }
+}
 
 .modal-backdrop {
   position: fixed;

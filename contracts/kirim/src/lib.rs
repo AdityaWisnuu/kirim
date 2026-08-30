@@ -188,12 +188,7 @@ impl Kirim {
 
     /// Tarik dana. Mode direct: `claimer` harus penerima yang tercatat.
     /// Mode link: `claimer` bebas, asal `secret` cocok dengan `claim_hash`.
-    pub fn claim(
-        env: Env,
-        id: u64,
-        claimer: Address,
-        secret: Option<Bytes>,
-    ) -> Result<(), Error> {
+    pub fn claim(env: Env, id: u64, claimer: Address, secret: Option<Bytes>) -> Result<(), Error> {
         claimer.require_auth();
 
         let mut t = read_transfer(&env, id)?;

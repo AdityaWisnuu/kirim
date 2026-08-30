@@ -118,7 +118,8 @@ export function openFeedback() {
 export function mountFeedbackButton() {
   const button = document.createElement("button");
   button.className = "fab ghost";
-  button.textContent = "💬 Feedback";
+  button.innerHTML = `💬<span class="fab-label"> Feedback</span>`;
+  button.setAttribute("aria-label", "Send feedback");
   button.addEventListener("click", openFeedback);
   document.body.appendChild(button);
 }
