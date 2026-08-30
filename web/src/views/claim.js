@@ -192,6 +192,7 @@ async function doClaim({ mount, transfer, secret, requireWallet, id }) {
     status.className = "status ok";
     status.innerHTML = `Money's in your wallet. <a href="${EXPLORER}/tx/${hash}" target="_blank" rel="noreferrer">See it on-chain ↗</a>`;
     toast("Claimed 🎉 The money is yours.", "ok");
+    renderShareLoop(mount);
     maybeAskForFeedback();
 
     const fresh = await getTransfer(id);
@@ -249,4 +250,46 @@ function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
   );
+}
+
+/// Orang yang baru saja menerima uang adalah orang yang paling paham gunanya.
+/// Di situlah tempat paling wajar untuk menawarkan meneruskannya.
+function renderShareLoop(mount) {
+  const join = `${location.origin}/join`;
+  const pitch = "Barusan nyoba KIRIM 🧧 — kirim uang di Stellar pakai escrow, penerima klaim lewat link, dan kalau nggak diklaim uangnya balik ke pengirim. Coba deh:";
+
+  const panel = mount.querySelector("#action-panel");
+  if (!panel) return;
+
+  panel.insertAdjacentHTML(
+    "beforeend",
+    `<div class="panel landed" style="margin-top:16px;background:var(--ink-2)">
+       <h2>Pass it on</h2>
+       <p class="muted small" style="margin:0 0 12px">
+         Know someone who'd get it? One tap and they can try it too.
+       </p>
+       <div class="share-row">
+         <a class="button ghost" data-share="whatsapp"
+            href="https://wa.me/?text=${encodeURIComponent(`${pitch} ${join}`)}"
+            target="_blank" rel="noreferrer">WhatsApp</a>
+         <a class="button ghost" data-share="x"
+            href="https://x.com/intent/post?text=${encodeURIComponent(pitch)}&url=${encodeURIComponent(join)}"
+            target="_blank" rel="noreferrer">Post on X</a>
+         <button class="ghost" data-share="copy" id="share-copy">Copy link</button>
+       </div>
+     </div>`
+  );
+
+  panel.querySelectorAll("[data-share]").forEach((control) => {
+    control.addEventListener("click", async () => {
+      track("share_clicked", { channel: control.dataset.share });
+      if (control.dataset.share !== "copy") return;
+      try {
+        await navigator.clipboard.writeText(join);
+        toast("Link copied — send it to them 🧧", "ok");
+      } catch {
+        toast(join);
+      }
+    });
+  });
 }
